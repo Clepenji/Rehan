@@ -1,0 +1,109 @@
+#include <WiFi.h>
+#include <Wire.h>
+#include "Bonezegei_DHT11.h"
+#include "MPU6050.h"
+
+// WiFi credentials
+const char* ssid = "Phone1150";
+const char* password = "hotspots";
+const char* server_ip = "192.168.105.180"; // Replace with your server's IP
+const int server_port = 12345;
+
+WiFiClient client;
+MPU6050 mpu;
+Bonezegei_DHT11 dht(15);
+double tempDeg = 0;
+
+unsigned long currentMillis = 0;
+unsigned long previousMillis[2];
+unsigned long currentMicros = 0;
+unsigned long previousMicros = 0;
+
+void setup() {
+  Wire.begin();
+
+  Serial.begin(115200);
+  while (!Serial);
+
+  dht.begin();
+
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected!");
+
+  Serial.println("Initializing MPU6050...");
+  mpu.initialize();
+  if (mpu.testConnection()) {
+    Serial.println("MPU6050 connection successful");
+  } else {
+    Serial.println("MPU6050 connection failed");
+  }
+
+  mpu.CalibrateAccel(6);
+  Serial.println("\nat 600 Readings");
+  mpu.PrintActiveOffsets();
+
+  Serial.print("Connecting to server...");
+  while (!client.connect(server_ip, server_port)) {
+    Serial.print(".");
+    delay(1000);
+  }
+  Serial.println("\nConnected to server!");
+}
+
+void loop() {
+  currentMillis = millis();
+
+  if (client.connected()) {
+    int16_t ax_raw, ay_raw, az_raw;
+    double ax[250], ay[250], az[250];
+    unsigned long time_difference[250];
+    boolean reading = true;
+
+    // Read raw data from MPU6050 and store it in array of size 250
+    int i = 0;
+    while (reading) {
+      currentMicros = micros();
+      time_difference[i] = currentMicros - previousMicros;
+
+      if (time_difference[i] >= 950) {
+        mpu.getAcceleration(&ax_raw, &ay_raw, &az_raw);
+        ax[i] = ax_raw / 16384.0;
+        ay[i] = ay_raw / 16384.0;
+        az[i] = (az_raw / 16384.0) - 1;
+
+        previousMicros = currentMicros;
+        i++;
+      }
+
+      if (i == 250) {
+        reading = false;
+        Serial.println();
+        for (int i = 0; i >= 250; i++) {
+          Serial.println(time_difference[i]);
+        }
+      }
+    }
+    // Read temperature from DHT11
+    if (currentMillis - previousMillis[0] >= 500) {
+      if (dht.getData()) {
+        tempDeg = dht.getTemperature();
+      }
+      previousMillis[0] = currentMillis;
+    }
+
+    //sending data every 1/4th of a second
+    client.write((uint8_t*)ax, sizeof(ax));
+    client.write((uint8_t*)ay, sizeof(ay));
+    client.write((uint8_t*)az, sizeof(az));
+    client.write((uint8_t)tempDeg);
+
+  } else {
+    Serial.println("Disconnected. Reconnecting...");
+    client.connect(server_ip, server_port);
+  }
+}
