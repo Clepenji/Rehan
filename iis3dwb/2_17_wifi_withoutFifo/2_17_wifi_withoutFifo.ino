@@ -119,15 +119,15 @@ void loop() {
       client.flush;
       
       // Print as CSV: Sample,X,Y,Z
-      for (int ii = 0; ii < 131072; ii++) {
-        Serial.print(ii+1);
-        Serial.print(",");
-        Serial.print(all_data[ii * 3], 6);
-        Serial.print(",");
-        Serial.print(all_data[ii * 3 + 1], 6);
-        Serial.print(",");
-        Serial.println(all_data[ii * 3 + 2], 6);
-        delayMicroseconds(10);
+      // for (int ii = 0; ii < 131072; ii++) {
+      //   Serial.print(ii+1);
+      //   Serial.print(",");
+      //   Serial.print(all_data[ii * 3], 6);
+      //   Serial.print(",");
+      //   Serial.print(all_data[ii * 3 + 1], 6);
+      //   Serial.print(",");
+      //   Serial.println(all_data[ii * 3 + 2], 6);
+      //   delayMicroseconds(10);
       }
 
       currentDataPoint = 0;
