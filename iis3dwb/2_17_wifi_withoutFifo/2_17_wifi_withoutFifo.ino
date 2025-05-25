@@ -3,6 +3,9 @@
 #include <WiFi.h>
 #include "esp_heap_caps.h"
 
+//This has to be a multiple of 1024 or you will miss few ending data points
+#define NUMBER_OF_SAMPLES 131072
+
 #define CSPIN 5
 #define IIS3DWBintPin1 34
 #define IIS3DWBintPin2 35
@@ -109,9 +112,9 @@ void loop() {
     all_data[currentDataPoint*3 + 2] = (float)AxyzData[2]*aRes - accelBias[2];
 
     currentDataPoint++;
-    if (currentDataPoint >= 131072) {
+    if (currentDataPoint >= NUMBER_OF_SAMPLES) {
       uint8_t chunkSize = 1024;
-      for (int i = 0; i < 384; i++){
+      for (int i = 0; i < 3*(NUMBER_OF_SAMPLES / 1024); i++){
         client.write((uint8_t*)all_data + chunkSize*i, chunkSize);
         delay(100);
       }
@@ -119,7 +122,7 @@ void loop() {
       client.flush;
       
       // Print as CSV: Sample,X,Y,Z
-      // for (int ii = 0; ii < 131072; ii++) {
+      // for (int ii = 0; ii < NUMBER_OF_SAMPLES; ii++) {
       //   Serial.print(ii+1);
       //   Serial.print(",");
       //   Serial.print(all_data[ii * 3], 6);
