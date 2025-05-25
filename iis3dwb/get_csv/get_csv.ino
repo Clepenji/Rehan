@@ -2,6 +2,9 @@
 #include <SPI.h>
 #include "esp_heap_caps.h"
 
+//It is recommended to keep this number a power of 2(Eg. 1024 = 2^10)
+#define NUMBER_OF_SAMPLES 131072 //This is 2^17
+
 #define CSPIN 5
 #define IIS3DWBintPin1 34
 #define IIS3DWBintPin2 35
@@ -82,9 +85,9 @@ void loop() {
     all_data[currentDataPoint*3 + 2] = (float)AxyzData[2]*aRes - accelBias[2];
 
     currentDataPoint++;
-    if (currentDataPoint >= 131072) {
+    if (currentDataPoint >= NUMBER_OF_SAMPLES) {
       // Print as CSV: Sample,X,Y,Z
-      for (int ii = 0; ii < 131072; ii++) {
+      for (int ii = 0; ii < NUMBER_OF_SAMPLES; ii++) {
         Serial.print(ii+1);
         Serial.print(",");
         Serial.print(all_data[ii * 3], 6);
